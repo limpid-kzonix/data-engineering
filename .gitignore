@@ -1,2 +1,4 @@
 .env
 data-engineering-tools/kafka-connect/kafka-connect
+.metals
+**/.metals
