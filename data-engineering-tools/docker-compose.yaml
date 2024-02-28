@@ -79,7 +79,15 @@ services:
       CONNECT_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
       AWS_ACCESS_KEY_ID: "minioadmin"
       AWS_SECRET_KEY: "minioadmin"
-
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 2048M
+          pids: 1000
+        reservations:
+          cpus: '1'
+          memory: 2048M  
 
 
   minio:
@@ -162,17 +170,49 @@ services:
           cpus: '4'
           memory: 8000M     
 
+  awscli:
+    image: amazon/aws-cli:latest
+    command: tail -f /dev/null
+    entrypoint: ["/bin/bash", "-c"]
+    depends_on:
+      - minio
+    volumes:
+      - $PWD/test-data:/test-data
+    environment:
+      - AWS_ACCESS_KEY_ID=minioadmin
+      - AWS_SECRET_ACCESS_KEY=minioadmin
+      - AWS_ENDPOINT_URL=http://minio:9000
+    tty: true
+  
+  minio-client:
+    image: minio/mc:latest
+    command: >
+        mc alias set test http://minio:9000 minioadmin minioadmin
+        tail -f /dev/null
+    entrypoint: ["/bin/bash", "-c"]
+    depends_on:
+      - minio
+    volumes:
+      - $PWD/test-data:/test-data
+      - $PWD/minio-client/config.json:/root/.mc/config.json
+    environment:
+      - MC_HOST_test=http://minioadmin:minioadmin@minio:9000
+    tty: true
+
   kafkactl:
     image: deviceinsight/kafkactl:latest
     command: tail -f /dev/null
     entrypoint: ["/bin/bash", "-c"]
     depends_on:
       - kafka
+      - zookeeper
     volumes:
-      - $PWD/extexample_file.jsonl:/example_file.jsonl
+      - $PWD/test-data:/test-data
     environment:
       BROKERS: kafka:29092
     tty: true
+
+
   redpanda-console:
     image: docker.redpanda.com/redpandadata/console:latest
     ports:

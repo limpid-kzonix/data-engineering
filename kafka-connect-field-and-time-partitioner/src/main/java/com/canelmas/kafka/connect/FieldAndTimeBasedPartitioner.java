@@ -38,9 +38,13 @@ import static io.confluent.connect.storage.partitioner.PartitionerConfig.*;
 public final class FieldAndTimeBasedPartitioner<T> extends TimeBasedPartitioner<T> {
 
     public static final String PARTITION_FIELD_FORMAT_PATH_CONFIG = "partition.field.format.path";
+    public static final String PARTITION_FIELD_FORMAT_PATH_DOC = "Whether directory labels should be included when partitioning for custom fields e.g. " +
+        "whether this 'orgId=XXXX/appId=ZZZZ/customField=YYYY' or this 'XXXX/ZZZZ/YYYY'.";
+    public static final String PARTITION_FIELD_FORMAT_PATH_DISPLAY = "Partition Field Format Path";
     public static final boolean PARTITION_FIELD_FORMAT_PATH_DEFAULT = true;
     private static final Logger log = LoggerFactory.getLogger(FieldAndTimeBasedPartitioner.class);
     private PartitionFieldExtractor fieldExtractor;
+
     protected void init(long partitionDurationMs, String pathFormat, Locale locale, DateTimeZone timeZone, Map<String, Object> config) {
         super.init(partitionDurationMs, pathFormat, locale, timeZone, config);
 
@@ -88,10 +92,10 @@ public final class FieldAndTimeBasedPartitioner<T> extends TimeBasedPartitioner<
             this.jsonParser = new JsonParser();
             this.keys = fieldNames.stream().map(fieldName -> {
                 if (fieldName.contains(".")) {
-                    final String[] split = fieldName.split(".");
+                    final String[] split = fieldName.split("\\.");
                     return Map.entry(fieldName, Arrays.asList(split));
                 } else {
-                    return Map.entry(fieldName, Arrays.asList(fieldName));
+                    return Map.entry(fieldName, List.of(fieldName));
                 }
 
             }).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
@@ -99,7 +103,7 @@ public final class FieldAndTimeBasedPartitioner<T> extends TimeBasedPartitioner<
         }
 
         private static String listToString(final List<String> list) {
-            return list.stream().collect(Collectors.joining(", "));
+            return String.join(", ", list);
         }
 
         public String extract(final ConnectRecord<?> record) {
@@ -107,14 +111,16 @@ public final class FieldAndTimeBasedPartitioner<T> extends TimeBasedPartitioner<
             final JsonElement rootElement = jsonParser.parse(value.toString());
             final StringBuilder builder = new StringBuilder();
 
-
-
             for (final Map.Entry<String, List<String>> entry : keys.entrySet()) {
                 JsonElement element = rootElement;
                 final String fieldName = entry.getKey();
                 final List<String> fieldPathParts = entry.getValue();
 
                 for (final String fieldPart : fieldPathParts) {
+                    if (element == null) {
+                        log.error("Field {} is not found in the record", fieldName);
+                        break;
+                    }
                     element = element.getAsJsonObject().get(fieldPart);
                 }
 
@@ -122,10 +128,22 @@ public final class FieldAndTimeBasedPartitioner<T> extends TimeBasedPartitioner<
                     builder.append(StorageCommonConfig.DIRECTORY_DELIM_DEFAULT);
                 }
 
-                if (formatPath) {
-                    builder.append(String.join(DELIMITER_EQ, fieldName, element.getAsString()));
+                String elementAsString;
+                if (element != null) {
+                    log.info("Extracted field {} with value {}", fieldName, element);
+                    try {
+                        elementAsString = element.getAsString();
+                    } catch (Exception e) {
+                        log.error("Field {} is not a string, trying to convert to number. {}", fieldName, element, e);
+                        elementAsString = "unknown";
+                    }
                 } else {
-                    builder.append(element.getAsString());
+                    elementAsString = "unknown";
+                }
+                if (formatPath) {
+                    builder.append(String.join(DELIMITER_EQ, fieldName, elementAsString));
+                } else {
+                    builder.append(elementAsString);
                 }
             }
             return builder.toString();

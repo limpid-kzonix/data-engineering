@@ -51,7 +51,7 @@ class CollectingDailyKeyedProcessFunction
     val tempBufferSizeValue = Option(tempBufferSize.value()).getOrElse(0L)
     tempBufferSize.update(tempBufferSizeValue + value.raw.length)
 
-    if(tempBufferSize.value() > )
+    //gif(tempBufferSize.value() > )
 
     val prevTimer = Option(timerState.value())
     // Set timer for midnight

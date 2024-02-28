@@ -1,1 +1,2 @@
 **/*.jar
+test-data/private-*.jsonl
