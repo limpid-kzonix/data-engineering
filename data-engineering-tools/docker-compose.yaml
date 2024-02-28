@@ -99,90 +99,68 @@ services:
       retries: 5
     command: server --console-address ":9001" /data
 
-
-  # client: 
-  #   image: flink:latest
-  #   volumes:
-  #     - $PWD/flink/flink-demo-assembly-0.1.jar:/opt/TestJob.jar
-  #     - $PWD/flink/flink-conf.yaml:/opt/flink/conf/flink-conf.yaml
-  #   working_dir: /opt/flink/bin
-  #   command: "flink run -d /opt/TestJob.jar --checkpointing --event-time"
-  #   depends_on:
-  #     - jobmanager
-  #     - taskmanager-1
-  #     - kafka
-  #     - minio
+  # (optional) deploy flink job to the job-manager
+  client: 
+    image: flink:latest
+    volumes:
+      - $PWD/flink/flink-demo-assembly-0.1.jar:/opt/TestJob.jar
+      - $PWD/flink/flink-conf.yaml:/opt/flink/conf/flink-conf.yaml
+    working_dir: /opt/flink/bin
+    command: "flink run -d /opt/TestJob.jar --checkpointing --event-time"
+    depends_on:
+      - jobmanager
+      - taskmanager-1
+      - kafka
+      - minio
     
 
-  # jobmanager:
-  #   image: flink:latest # java 11, scala 2.12, flink 1.18.1 
-  #   ports:
-  #     - "8081:8081"
-  #     - "6123:6123"
-  #   depends_on:
-  #     - kafka
-  #     - minio
-  #   command: jobmanager
-  #   volumes:
-  #     # - flink_data:/tmp/
-  #     - $PWD/flink/plugins/flink-s3-fs-hadoop-1.18.1.jar:/opt/flink/plugins/flink-s3-fs-hadoop/flink-s3-fs-hadoop-1.18.1.jar
-  #     - $PWD/flink/flink-conf.yaml:/opt/flink/conf/flink-conf.yaml
-  #   environment: 
-  #     - S3_PATH_STYLE_ACCESS=true
-  #   deploy:
-  #     resources:
-  #       limits:
-  #         cpus: '1'
-  #         memory: 2048M
-  #         pids: 1000
-  #       reservations:
-  #         cpus: '1'
-  #         memory: 2048M  
+  jobmanager:
+    image: flink:latest # java 11, scala 2.12, flink 1.18.1 
+    ports:
+      - "8081:8081"
+      - "6123:6123"
+    depends_on:
+      - kafka
+      - minio
+    command: jobmanager
+    volumes:
+      # - flink_data:/tmp/
+      - $PWD/flink/plugins/flink-s3-fs-hadoop-1.18.1.jar:/opt/flink/plugins/flink-s3-fs-hadoop/flink-s3-fs-hadoop-1.18.1.jar
+      - $PWD/flink/flink-conf.yaml:/opt/flink/conf/flink-conf.yaml
+    environment: 
+      - S3_PATH_STYLE_ACCESS=true
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 2048M
+          pids: 1000
+        reservations:
+          cpus: '1'
+          memory: 2048M  
 
-  # taskmanager-1:
-  #   image: flink:latest
-  #   command: taskmanager
-  #   volumes:
-  #     # - flink_data:/tmp/
-  #     - $PWD/flink/plugins/flink-s3-fs-hadoop-1.18.1.jar:/opt/flink/plugins/flink-s3-fs-hadoop/flink-s3-fs-hadoop-1.18.1.jar
-  #     - $PWD/flink/flink-conf.yaml:/opt/flink/conf/flink-conf.yaml
-  #   depends_on:
-  #     - jobmanager
-  #     - kafka
-  #     - minio
-  #   environment: 
-  #     - S3_PATH_STYLE_ACCESS=true
-  #   deploy:
-  #     resources:
-  #       limits:
-  #         cpus: '4'
-  #         memory: 8000M
-  #         pids: 1000
-  #       reservations:
-  #         cpus: '4'
-  #         memory: 8000M     
-  # taskmanager-2:
-  #   image: flink:latest
-  #   command: taskmanager
-  #   volumes:
-  #     # - flink_data:/tmp/
-  #     - $PWD/flink/plugins/flink-s3-fs-hadoop-1.18.1.jar:/opt/flink/plugins/flink-s3-fs-hadoop/flink-s3-fs-hadoop-1.18.1.jar
-  #     - $PWD/flink/flink-conf.yaml:/opt/flink/conf/flink-conf.yaml
-  #   depends_on:
-  #     - jobmanager
-  #     - kafka
-  #     - minio
-  #   environment: 
-  #     - S3_PATH_STYLE_ACCESS=true
-  #   deploy:
-  #     resources:
-  #       limits:
-  #         cpus: '4'
-  #         memory: 8000M
-  #         pids: 1000
-  #       reservations:
-  #         cpus: '4'
-  #         memory: 8000M
+  taskmanager-1:
+    image: flink:latest
+    command: taskmanager
+    volumes:
+      # - flink_data:/tmp/
+      - $PWD/flink/plugins/flink-s3-fs-hadoop-1.18.1.jar:/opt/flink/plugins/flink-s3-fs-hadoop/flink-s3-fs-hadoop-1.18.1.jar
+      - $PWD/flink/flink-conf.yaml:/opt/flink/conf/flink-conf.yaml
+    depends_on:
+      - jobmanager
+      - kafka
+      - minio
+    environment: 
+      - S3_PATH_STYLE_ACCESS=true
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 8000M
+          pids: 1000
+        reservations:
+          cpus: '4'
+          memory: 8000M     
 
   kafkactl:
     image: deviceinsight/kafkactl:latest
