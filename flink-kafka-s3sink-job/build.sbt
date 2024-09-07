@@ -34,7 +34,7 @@ lazy val root = (project in file("."))
       ++ Seq(
         "org.apache.logging.log4j" % "log4j-api" % "2.20.0",
         "org.apache.logging.log4j" % "log4j-slf4j-impl" % "2.24.0",
-        "org.apache.logging.log4j" % "log4j-core" % "2.20.0"
+        "org.apache.logging.log4j" % "log4j-core" % "2.24.0"
       ).map(_ % "provided")
       ++ Seq(
         "org.apache.flink" % "flink-connector-kafka" % "3.1.0-1.18",
